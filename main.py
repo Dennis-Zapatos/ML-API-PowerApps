@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 # import joblib
 
-with open('app/prediction_pipe.pkl', 'rb') as f:
+with open('prediction_pipe.pkl', 'rb') as f:
     pipe = pickle.load(f)
 # pipe = joblib.load('prediction_pipe2.pkl')
 
@@ -47,5 +47,5 @@ def predict_price(item:HouseData):
 # if __name__ == '__main__':
 #     uvicorn.run(app, host='127.0.0.1', port=8000)
 
-uvicorn.run(app)
+uvicorn.run(app, host='127.0.0.1', port=8000)
 #uvicorn main:app --reload
