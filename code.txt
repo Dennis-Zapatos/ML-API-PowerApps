@@ -1,0 +1,48 @@
+import pandas as pd
+import numpy as np
+
+df_house = pd.read_excel("PH_houses_4.xlsx")
+df_house.dropna().drop_duplicates()
+# Format colums as float
+df_house = df_house.astype({'Price':'float','Bedrooms':'float', 'Bath':'float', 'Area':'float'}) 
+# Shuffle the rows randomly to distribute adjacent houses that are on the same location
+df_house = df_house.sample(frac=1, random_state=42)
+df_house.reset_index(drop=True, inplace=True)
+
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.compose import make_column_transformer
+
+# Text Processing
+# Vectorize the Description column using TF-IDF
+tfidf_d = TfidfVectorizer() #tfidf function for description text data
+tfidf_description = tfidf_d.fit_transform(df_house['Description'])
+tfidf_description_data = tfidf_d.transform(df_house['Description'])
+
+# Vectorize the Location column using TF-IDF
+tfidf_l = TfidfVectorizer() #tfidf function for location text data
+tfidf_location = tfidf_l.fit_transform(df_house['Location'])
+tfidf_location_data = tfidf_l.transform(df_house['Location'])
+
+# Get the vocabulary learned from the training data
+description_vocabulary = tfidf_d.get_feature_names_out()
+location_vocabulary = tfidf_l.get_feature_names_out()
+
+df_tfidf =pd.concat(
+    [pd.DataFrame(tfidf_description_data.toarray(), columns=description_vocabulary)
+    ,pd.DataFrame(tfidf_location_data.toarray(), columns=location_vocabulary)], axis=1)
+
+# Combine tfidf data with house data
+df_final = df_house.drop(['Description', 'Location'], axis=1)
+df_final = pd.concat([df_final, df_tfidf] , axis=1)
+
+# Train-Test split
+from sklearn.model_selection import train_test_split
+X = df_final.drop(['Price'], axis=1)
+y = df_final['Price'].values
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=8)
+
+
+from sklearn.ensemble import RandomForestRegressor
+model_RFR = RandomForestRegressor(n_estimators=10)
+model_RFR.fit(X_train, y_train)
+Y_pred_RFR = model_RFR.predict(X_test)
